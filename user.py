@@ -2,6 +2,7 @@ import numpy as np
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 import warnings
+from load_save import *
 
 class user_MEGA:
     def __init__(self, p_0:float, alpha:float, beta:float, c:float, d:float, K:int, time_end:int) -> None:
@@ -109,33 +110,27 @@ class user_RAND:
             self.exploit_loc[t-1] = self.a[t-1] if arms_reward_old[self.a[t-1]] else -2
             self.a[t] = self.a[t-1]
 
-def run_simulation_MEGA(p_0, alpha, beta, c, d, K, time_end, N, mu_list):
-    users = [user_MEGA(p_0, alpha, beta, c, d, K, time_end) for idx in range(N)]
-    num_users_on_channels = np.zeros([time_end, K], dtype=np.int8)
+
+def run_simulation(UserClass,  N, mu_list, time_end, user_class_kwargs):
+    # Unpack args
+    user_class_kwargs['time_end'] = time_end # time_end needed to know in both server and user (to optimize runtime)
+
+    # create users
+    users = [UserClass(**user_class_kwargs) for _ in range(N)]
+    num_users_on_channels = np.zeros([time_end, len(mu_list)], dtype=np.int8)
+
+    ##### main loop #####
     for t in tqdm(range(1, time_end)):
-        # check collision
+        # Track collisions
         for user in users:
-            if user.a[t-1] >=0: num_users_on_channels[t-1, user.a[t-1]] += 1
-        # Generate Bernoulli random reward
+            if user.a[t-1] >= 0: num_users_on_channels[t-1, user.a[t-1]] += 1
+        # Generate Bernoulli random rewards
         arms_reward_old = np.random.binomial(n=1, p=mu_list, size=len(mu_list))
         for user in users:
             user.step(arms_reward_old, num_users_on_channels)
-            
+
     return num_users_on_channels, users
 
-def run_simulation_RAND(K, time_end, N, mu_list):
-    users = [user_RAND(K, time_end) for idx in range(N)]
-    num_users_on_channels = np.zeros([time_end, K], dtype=np.int8)
-    for t in tqdm(range(1, time_end)):
-        # check collision
-        for user in users:
-            if user.a[t-1] >=0: num_users_on_channels[t-1, user.a[t-1]] += 1
-        # Generate Bernoulli random reward
-        arms_reward_old = np.random.binomial(n=1, p=mu_list, size=len(mu_list))
-        for user in users:
-            user.step(arms_reward_old, num_users_on_channels)
-            
-    return num_users_on_channels, users
             
 def test_1():
     mu_list = [0.9, 0.8 ,0.7, 0.6, 0.5 ,0.4, 0.3, 0.2 ,0.1]
@@ -157,9 +152,13 @@ def test_1():
     if min_distance_between_rewards < d:
         warnings.warn("This is a warning message.")
 
-    num_users_on_channels_MEGA, users_MEGA = run_simulation_MEGA(p_0, alpha, beta, c, d, K, time_end, N, mu_list)
-    mu_list = [0.9, 0.8 ,0.7, 0.62, 0.5 ,0.4, 0.3, 0.2 ,0.1]
-    num_users_on_channels_RAND, users_RAND = run_simulation_MEGA(p_0, alpha, beta, c, d, K, time_end, N, mu_list)
+    mega_args = {"p_0": p_0, "alpha": alpha, "beta": beta, "c": c, "d": d, "K": K}
+    num_users_on_channels_MEGA, users_MEGA = run_simulation(user_MEGA, N, mu_list, time_end, mega_args)
+    rand_args = {"K": K}
+    num_users_on_channels_RAND, users_RAND = run_simulation(user_RAND, N, mu_list, time_end, rand_args)
+
+    save_matrix_with_mu(num_users_on_channels_MEGA, mu_list, 'MEGA')
+    save_matrix_with_mu(num_users_on_channels_RAND, mu_list, 'RAND')
 
     # plot
     all_collision_MEGA = np.sum(np.maximum(0, num_users_on_channels_MEGA - 1), axis=1)/N
@@ -168,8 +167,8 @@ def test_1():
     all_collision_RAND = np.sum(np.maximum(0, num_users_on_channels_RAND - 1), axis=1)/N
     collision_over_time_RAND = np.cumsum(all_collision_RAND)
     
-    plt.plot(collision_over_time_MEGA, label='MEGA - original d < Delta')
-    plt.plot(collision_over_time_RAND, label='MEGA - modify   d > Delta')
+    plt.plot(collision_over_time_MEGA, label='MEGA - d < Delta')
+    plt.plot(collision_over_time_RAND, label='RAND')
     plt.title("collision_over_time")
     plt.legend()
     plt.show()
@@ -177,7 +176,7 @@ def test_1():
     fig, axes = plt.subplots(3, 3, figsize=(18, 8))
     axes = axes.flatten()
 
-    for i, user in enumerate(users_MEGA):
+    for i, user in enumerate(users_RAND):
         axes[i].plot(user.a)
         axes[i].set_title(f'user {i+1}')
         axes[i].set_xlabel('time')

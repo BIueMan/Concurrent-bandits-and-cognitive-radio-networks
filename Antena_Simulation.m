@@ -8,7 +8,7 @@ k=2;
 s = (2*pi/10);
 
 % Set up video writer
-v = VideoWriter('plot_animation.mp4', 'MPEG-4');
+v = VideoWriter('output/plot_animation.mp4', 'MPEG-4');
 v.VideoCompressionMethod
 open(v);
 

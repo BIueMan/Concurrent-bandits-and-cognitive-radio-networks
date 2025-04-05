@@ -5,7 +5,7 @@ ystep = -10*pi:pi/10:10*pi;
 
 n=8; % should be even integer
 k=2;
-s = 0;
+s = (2*pi/10);
 
 % Set up video writer
 v = VideoWriter('plot_animation.mp4', 'MPEG-4');

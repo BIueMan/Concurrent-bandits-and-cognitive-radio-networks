@@ -21,7 +21,7 @@ class user_MEGA:
         if K > max_int8:
             raise ValueError
         
-        self.reward_empirical_mean = {'reward_sum':np.zeros([K]), 'num_sum':np.zeros([K],dtype=np.int)}
+        self.reward_empirical_mean = {'reward_sum':np.zeros([K]), 'num_sum':np.zeros([K],dtype=np.int32)}
         self.a = np.zeros([time_end], dtype=np.int8)
         self.a[0] = np.random.randint(0, K)
 
@@ -147,7 +147,6 @@ def test_1():
     alpha = 0.5
     beta = 0.8
     d = 0.05
-    if d: warnings.warn("This is a warning message.")
 
     time_end = int(3e4)
     simulation_time = 10
@@ -155,11 +154,12 @@ def test_1():
     A = np.pad(np.sort(mu_list), (0, 1))
     B = np.pad(np.sort(mu_list), (1, 0))
     min_distance_between_rewards = np.min((A-B)[:-1])
-    if min_distance_between_rewards > d:
+    if min_distance_between_rewards < d:
         warnings.warn("This is a warning message.")
 
     num_users_on_channels_MEGA, users_MEGA = run_simulation_MEGA(p_0, alpha, beta, c, d, K, time_end, N, mu_list)
-    num_users_on_channels_RAND, users_RAND = run_simulation_RAND(K, time_end, N, mu_list)
+    mu_list = [0.9, 0.8 ,0.7, 0.62, 0.5 ,0.4, 0.3, 0.2 ,0.1]
+    num_users_on_channels_RAND, users_RAND = run_simulation_MEGA(p_0, alpha, beta, c, d, K, time_end, N, mu_list)
 
     # plot
     all_collision_MEGA = np.sum(np.maximum(0, num_users_on_channels_MEGA - 1), axis=1)/N
@@ -168,9 +168,10 @@ def test_1():
     all_collision_RAND = np.sum(np.maximum(0, num_users_on_channels_RAND - 1), axis=1)/N
     collision_over_time_RAND = np.cumsum(all_collision_RAND)
     
-    plt.plot(collision_over_time_MEGA, label='MEGA')
-    plt.plot(collision_over_time_RAND, label='RAND')
+    plt.plot(collision_over_time_MEGA, label='MEGA - original d < Delta')
+    plt.plot(collision_over_time_RAND, label='MEGA - modify   d > Delta')
     plt.title("collision_over_time")
+    plt.legend()
     plt.show()
     
     fig, axes = plt.subplots(3, 3, figsize=(18, 8))

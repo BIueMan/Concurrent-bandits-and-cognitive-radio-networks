@@ -19,6 +19,7 @@ class user_MEGA:
             raise ValueError
         
         self.reward_empirical_mean = {'reward_sum':np.zeros([K]), 'num_sum':np.zeros([K],dtype=np.int32)}
+        self.reward = np.zeros([time_end], dtype=np.int8)
         self.a = np.zeros([time_end], dtype=np.int8)
         self.a[0] = np.random.randint(0, K)
 
@@ -51,6 +52,7 @@ class user_MEGA:
             # else, get reward
             else:
                 self.p = self.p*alpha + (1-alpha)
+                self.reward[t-1] = arms_reward_old[self.a[t-1]]
                 self.reward_empirical_mean['reward_sum'][self.a[t-1]] += arms_reward_old[self.a[t-1]]
                 self.reward_empirical_mean['num_sum'][self.a[t-1]] += 1
 
@@ -84,6 +86,7 @@ class user_RAND:
             raise ValueError
         
         self.a = np.zeros([time_end], dtype=np.int8)
+        self.reward = np.zeros([time_end], dtype=np.int8)
         self.a[0] = np.random.randint(0, K)
 
     def step(self, arms_reward_old, num_users_on_channels):
@@ -91,6 +94,10 @@ class user_RAND:
         self.t += 1
         t = self.t
         
-        ## go to next channel without checking reward or colition
+        # [t-1] check if not collision, then get reward
+        if not num_users_on_channels[t-1, self.a[t-1]] > 1:
+            self.reward[t-1] = arms_reward_old[self.a[t-1]]
+        
+        ## [t] go to next channel without checking reward or colition
         self.a[t] = np.random.randint(0, self.K)
             

@@ -51,15 +51,58 @@ def test_1():
     rand_args = {"K": K}
     num_users_on_channels_RAND, users_RAND = run_simulation(user_RAND, N, mu_list, time_end, rand_args)
 
-    save_matrix_with_mu(num_users_on_channels_MEGA, mu_list, 'MEGA')
-    save_matrix_with_mu(num_users_on_channels_RAND, mu_list, 'RAND')
+    save_matrix_with_mu(num_users_on_channels_MEGA, mu_list, 'MEGA_num_users_on_channel')
+    save_matrix_with_mu(num_users_on_channels_RAND, mu_list, 'RAND_num_users_on_channel')
+    
+    # extract reward per user
+    user_idx_list = list(range(N))
+    reward_mat_mega = np.array([user.reward for user in users_MEGA], dtype=np.int8).T
+    reward_mat_rand = np.array([user.reward for user in users_RAND], dtype=np.int8).T
+    save_matrix_with_mu(reward_mat_mega, user_idx_list, 'MEGA_reward_per_user')
+    save_matrix_with_mu(reward_mat_rand, user_idx_list, 'RAND_reward_per_user')
 
-    # plot
+    # plot collision
     all_collision_MEGA = np.sum(np.maximum(0, num_users_on_channels_MEGA - 1), axis=1)/N
     collision_over_time_MEGA = np.cumsum(all_collision_MEGA)
     
     all_collision_RAND = np.sum(np.maximum(0, num_users_on_channels_RAND - 1), axis=1)/N
     collision_over_time_RAND = np.cumsum(all_collision_RAND)
+    
+    plt.plot(collision_over_time_MEGA, label='MEGA - d < Delta')
+    plt.plot(collision_over_time_RAND, label='RAND')
+    plt.title("collision_over_time")
+    plt.legend()
+    plt.show()
+    
+    ## plot regret ovetime
+    def compute_regret(mu_list, reward_mat, N, time_end):
+      # get sum best mu over time
+      mu_best_list = sorted(mu_list, reverse=True)[:N]
+      sum_mu_best = np.sum(mu_best_list)
+
+      # avg reward per timestep
+      all_reward = np.sum(reward_mat, axis=1)
+
+      # average over time
+      avg_reawrd_over_time_MEGA = np.cumsum(all_reward) / np.arange(1, time_end + 1)
+
+      # regret
+      return sum_mu_best - avg_reawrd_over_time_MEGA
+    
+    regret_MEGA = compute_regret(mu_list, reward_mat_mega, N, time_end)
+    regret_RAND = compute_regret(mu_list, reward_mat_rand, N, time_end)
+    
+    plt.plot(regret_MEGA, label='MEGA - d < Delta')
+    plt.plot(regret_RAND, label='RAND')
+    plt.title("regret_over_time")
+    plt.legend()
+    plt.show()
+    
+    
+    
+    
+    all_reward_RAND = np.sum(reward_mat_rand, axis=1)
+    reawrd_over_time_RAND = np.cumsum(all_reward_RAND)
     
     plt.plot(collision_over_time_MEGA, label='MEGA - d < Delta')
     plt.plot(collision_over_time_RAND, label='RAND')

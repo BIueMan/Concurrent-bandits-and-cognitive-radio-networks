@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import warnings
 from user import *
 from load_save import *
+from plots import *
 
 def run_simulation(UserClass,  N, mu_list, time_end, user_class_kwargs):
     # Unpack args
@@ -62,44 +63,16 @@ def test_1():
     save_matrix_with_mu(reward_mat_rand, user_idx_list, 'RAND_reward_per_user')
 
     # plot collision
-    all_collision_MEGA = np.sum(np.maximum(0, num_users_on_channels_MEGA - 1), axis=1)/N
-    collision_over_time_MEGA = np.cumsum(all_collision_MEGA)
+    collision_over_time_MEGA = compute_collision(num_users_on_channels_MEGA, N)
+    collision_over_time_RAND = compute_collision(num_users_on_channels_RAND, N)
     
-    all_collision_RAND = np.sum(np.maximum(0, num_users_on_channels_RAND - 1), axis=1)/N
-    collision_over_time_RAND = np.cumsum(all_collision_RAND)
+    plot_dict("collision_over_time", {'MEGA - d < Delta':collision_over_time_MEGA, 'RAND':collision_over_time_RAND})
+  
     
-    plt.plot(collision_over_time_MEGA, label='MEGA - d < Delta')
-    plt.plot(collision_over_time_RAND, label='RAND')
-    plt.title("collision_over_time")
-    plt.legend()
-    plt.show()
+    regret_MEGA = compute_regret(mu_list, reward_mat_mega)
+    regret_RAND = compute_regret(mu_list, reward_mat_rand)
     
-    ## plot regret ovetime
-    def compute_regret(mu_list, reward_mat, N, time_end):
-      # get sum best mu over time
-      mu_best_list = sorted(mu_list, reverse=True)[:N]
-      sum_mu_best = np.sum(mu_best_list)
-
-      # avg reward per timestep
-      all_reward = np.sum(reward_mat, axis=1)
-
-      # average over time
-      avg_reawrd_over_time_MEGA = np.cumsum(all_reward) / np.arange(1, time_end + 1)
-
-      # regret
-      return sum_mu_best - avg_reawrd_over_time_MEGA
-    
-    regret_MEGA = compute_regret(mu_list, reward_mat_mega, N, time_end)
-    regret_RAND = compute_regret(mu_list, reward_mat_rand, N, time_end)
-    
-    plt.plot(regret_MEGA, label='MEGA - d < Delta')
-    plt.plot(regret_RAND, label='RAND')
-    plt.title("regret_over_time")
-    plt.legend()
-    plt.show()
-    
-    
-    
+    plot_dict("regret_over_time", {'MEGA - d < Delta':regret_MEGA, 'RAND':regret_RAND})
     
     all_reward_RAND = np.sum(reward_mat_rand, axis=1)
     reawrd_over_time_RAND = np.cumsum(all_reward_RAND)

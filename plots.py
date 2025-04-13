@@ -16,7 +16,7 @@ def compute_regret(mu_list:list, reward_mat:np.ndarray) ->np.ndarray:
   avg_reawrd_over_time_MEGA = np.cumsum(all_reward) / np.arange(1, time_end + 1)
 
   # regret
-  return sum_mu_best - avg_reawrd_over_time_MEGA
+  return (sum_mu_best - avg_reawrd_over_time_MEGA)/N
 
 def compute_collision(num_users_on_channels, N):
   # plot collision

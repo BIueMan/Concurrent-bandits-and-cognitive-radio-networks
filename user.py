@@ -1,4 +1,6 @@
 import numpy as np
+from group_values import *
+import random
 
 class user_MEGA:
     def __init__(self, p_0:float, alpha:float, beta:float, c:float, d:float, K:int, time_end:int) -> None:
@@ -69,7 +71,9 @@ class user_MEGA:
             self.a[t] = free_arms[np.random.randint(0, len(free_arms))]
         else:
             # exploit
-            reward_mean = self.reward_empirical_mean['reward_sum'] / self.reward_empirical_mean['num_sum']
+            with np.errstate(invalid='ignore', divide='ignore'): # ignore devide 0/0
+                reward_mean = self.reward_empirical_mean['reward_sum'] / self.reward_empirical_mean['num_sum']
+            reward_mean = np.nan_to_num(reward_mean, nan=0.0)
             reward_idx_sort = np.argsort(reward_mean)[::-1]
             self.a[t] = self._find_first_valid(reward_idx_sort, free_arms)
         # update p if a[t] change
@@ -83,7 +87,7 @@ class user_MEGA:
         return next(valid_elements, None)
 
 class user_MEGA_col:
-    def __init__(self, p_0:float, alpha:float, beta:float, c:float, d:float, K:int, time_end:int) -> None:
+    def __init__(self, p_0:float, alpha:float, beta:float, c:float, d:float, K:int, time_end:int, delta:float) -> None:
         self.p_0 = p_0
         self.p = p_0
         self.alpha = alpha
@@ -94,6 +98,8 @@ class user_MEGA_col:
         self.K = K
         self.t = 0
         self.taken = np.ones([K],dtype=int)
+        
+        self.delta = delta
 
         # max K is max_int8
         max_int8 = np.iinfo(np.int8).max
@@ -115,6 +121,7 @@ class user_MEGA_col:
         # update t
         self.t += 1
         t = self.t
+        delta = self.delta
 
         ################ check reward for t-1 ################
         # if user transmit at t-1
@@ -151,8 +158,10 @@ class user_MEGA_col:
             self.a[t] = free_arms[np.random.randint(0, len(free_arms))]
         else:
             # exploit
-            reward_mean = self.reward_empirical_mean['reward_sum'] / self.reward_empirical_mean['num_sum']
-            reward_idx_sort = self._sort_rewards_with_threshold(reward_mean, 0.05)
+            with np.errstate(invalid='ignore', divide='ignore'): # ignore devide 0/0
+                reward_mean = self.reward_empirical_mean['reward_sum'] / self.reward_empirical_mean['num_sum']
+            reward_mean = np.nan_to_num(reward_mean, nan=0.0)
+            reward_idx_sort = self._sort_rewards_with_threshold(reward_mean, delta)
             self.a[t] = self._find_first_valid(reward_idx_sort, free_arms)
         # update p if a[t] change
         if self.a[t] != self.a[t-1]:
@@ -177,42 +186,12 @@ class user_MEGA_col:
         numpy.ndarray: Indices of the sorted rewards
         """
         # Create pairs (value, index)
-        paired = [(val, idx) for idx, val in enumerate(rewards)]
+        resoults = group_values_by_delta(list(rewards), alpha)
+        for key in resoults:
+            random.shuffle(resoults[key])
+        unpacked_indices = [idx for group_indices in resoults.values() for idx in group_indices]
         
-        ## Group similar values
-        groups = []
-        unprocessed = set(range(len(paired)))
-        while unprocessed:
-            # first unprocessed element
-            first_idx = next(iter(unprocessed))
-            first_val = paired[first_idx][0]
-            
-            # Find all elements close to it
-            current_group = []
-            for i in list(unprocessed):
-                if abs(paired[i][0] - first_val) < alpha:
-                    current_group.append(paired[i])
-                    unprocessed.remove(i)
-            
-            # Sort group by original index
-            current_group.sort(key=lambda x: x[1])
-            
-            # Add the group with its representative value (use the max value in the group)
-            representative_value = max(item[0] for item in current_group)
-            groups.append((representative_value, current_group))
-        
-        # Sort groups by their representative values (descending)
-        groups.sort(key=lambda x: x[0], reverse=True)
-        
-        # Flatten the sorted groups
-        result = []
-        for _, group in groups:
-            result.extend(group)
-        
-        # Extract just the indices
-        sorted_indices = [idx for _, idx in result]
-        
-        return np.array(sorted_indices)
+        return unpacked_indices
 
 
 class user_RAND:

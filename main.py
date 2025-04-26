@@ -122,7 +122,7 @@ def main3(seed = 0):
   beta = 0.8
   d = 0.05
   avg_size = 200
-  min_explore_value = 0.2
+  min_explore_value = 0.1
 
   ############ check ##########
   mega_args = {"p_0": p_0, "alpha": alpha, "beta": beta, "c": c, "d": d, "K": K}
@@ -138,7 +138,7 @@ def main3(seed = 0):
   collision_over_time_RAND = compute_collision(num_users_on_channels_RAND, N)
   collision_over_time_MEGA_cal = compute_collision(num_users_on_channels_MEGA_cal, N)
   
-  plot_dict("collision_over_time", {'MEGA - d < Delta':collision_over_time_MEGA, 'RAND':collision_over_time_RAND, 'MEGA - cal' : collision_over_time_MEGA_cal})
+  plot_dict("collision_over_time", {'MEGA':collision_over_time_MEGA, 'RAND':collision_over_time_RAND, 'MEGA - adapt' : collision_over_time_MEGA_cal})
 
   # extract reward per user, then print it
   reward_mat_mega = np.array([user.reward for user in users_MEGA], dtype=np.int8).T
@@ -149,7 +149,7 @@ def main3(seed = 0):
   regret_RAND = compute_regret(mu_list, reward_mat_rand)
   regret_MEGA_cal = compute_regret(mu_list, reward_mat_mega_cal)
 
-  plot_dict("regret_over_time", {'MEGA - d < Delta':regret_MEGA, 'RAND':regret_RAND, 'MEGA - cal' : regret_MEGA_cal})
+  plot_dict("regret_over_time", {'MEGA':regret_MEGA, 'RAND':regret_RAND, 'MEGA - adapt' : regret_MEGA_cal})
 
 
 def main2(seed = 0):
@@ -235,8 +235,10 @@ def main2(seed = 0):
   
 
 if __name__ == "__main__":
-  seed = 74406
-  # seed = 8905
+  seed = 74406 # normal cal
+  seed = 8905
+  seed = 9800 # adapt
+  seed = 5
   random.seed(seed)
   np.random.seed(seed)
-  main2(seed)
+  main3(seed)

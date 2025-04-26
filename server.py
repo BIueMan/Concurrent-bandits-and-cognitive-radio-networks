@@ -26,6 +26,35 @@ def run_simulation(UserClass,  N, mu_list, time_end, user_class_kwargs):
 
     return num_users_on_channels, users
 
+def run_simulation_div(UserClass,  N, mu_list, mu_div, time_end, user_class_kwargs):
+    # Unpack args
+    user_class_kwargs['time_end'] = time_end # time_end needed to know in both server and user (to optimize runtime)
+
+    # create users
+    users = [UserClass(**user_class_kwargs) for _ in range(N)]
+    num_users_on_channels = np.zeros([time_end, len(mu_list)], dtype=np.int8)
+    
+    def create_mu_matrix(mu_list, N, div):
+        mu_list = np.array(mu_list)
+        noise = np.random.uniform(low=-div, high=div, size=(len(mu_list), N))
+        matrix = mu_list[:, np.newaxis] + noise
+        matrix = np.clip(matrix, 0, 1)
+        return matrix
+    mu_matrix = create_mu_matrix(mu_list, N, mu_div)
+
+    ##### main loop #####
+    for t in tqdm(range(1, time_end)):
+        # Track collisions
+        for user in users:
+            if user.a[t-1] >= 0: num_users_on_channels[t-1, user.a[t-1]] += 1
+        # Generate Bernoulli random rewards
+        for idx, user in enumerate(users):
+            selected_mu_list = mu_matrix[idx]
+            arms_reward_old = np.random.binomial(n=1, p=selected_mu_list, size=len(selected_mu_list))
+            user.step(arms_reward_old, num_users_on_channels)
+
+    return num_users_on_channels, users
+
 def run_simulation_mu_changes(UserClass, N, mu_list, time_end, user_class_kwargs):
     # Unpack args
     user_class_kwargs['time_end'] = time_end # time_end needed to know in both server and user (to optimize runtime)

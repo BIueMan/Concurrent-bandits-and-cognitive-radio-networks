@@ -49,7 +49,7 @@ def run_simulation_div(UserClass,  N, mu_list, mu_div, time_end, user_class_kwar
             if user.a[t-1] >= 0: num_users_on_channels[t-1, user.a[t-1]] += 1
         # Generate Bernoulli random rewards
         for idx, user in enumerate(users):
-            selected_mu_list = mu_matrix[idx]
+            selected_mu_list = mu_matrix[:, idx]
             arms_reward_old = np.random.binomial(n=1, p=selected_mu_list, size=len(selected_mu_list))
             user.step(arms_reward_old, num_users_on_channels)
 

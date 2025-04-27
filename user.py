@@ -316,3 +316,42 @@ class user_RAND:
         ## [t] go to next channel without checking reward or colition
         self.a[t] = np.random.randint(0, self.K)
             
+@add_debug_group
+class user_EXPLORATION_FACTOR_ONLY:
+    def __init__(self, K:int, time_end:int, c:float, d:float) -> None:
+        self.K = K
+        self.t = 0
+        self.c = c
+        self.d = d
+
+        # max K is max_int8
+        max_int8 = np.iinfo(np.int8).max
+        if K > max_int8:
+            raise ValueError
+        
+        self.a = np.zeros([time_end], dtype=np.int8)
+        self.reward = np.zeros([time_end], dtype=np.int8)
+        self.a[0] = np.random.randint(0, K)
+
+    def step(self, arms_reward_old, num_users_on_channels):
+        # update t
+        self.t += 1
+        t = self.t
+        
+        # [t-1] check if not collision, then get reward
+        is_collision = num_users_on_channels[t-1, self.a[t-1]] > 1
+        if not is_collision:
+            self.reward[t-1] = arms_reward_old[self.a[t-1]]
+        
+        ## [t] go to next channel while only check the exploration factor
+        K = self.K
+        c = self.c
+        d = self.d
+        ################ explore or exploit ################
+        epsilon = np.min([1, (c*K**2)/(d**2 * (K-1) *t)])
+        if np.random.rand() <= epsilon or is_collision:
+            # explore
+            self.a[t] = np.random.randint(0, len(K))
+        else:
+            # exploit
+            self.a[t] = self.a[t-1]

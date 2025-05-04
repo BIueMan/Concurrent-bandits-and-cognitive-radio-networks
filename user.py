@@ -316,7 +316,6 @@ class user_RAND:
         ## [t] go to next channel without checking reward or colition
         self.a[t] = np.random.randint(0, self.K)
             
-@add_debug_group
 class user_EXPLORATION_FACTOR_ONLY:
     def __init__(self, K:int, time_end:int, c:float, d:float) -> None:
         self.K = K
@@ -351,7 +350,7 @@ class user_EXPLORATION_FACTOR_ONLY:
         epsilon = np.min([1, (c*K**2)/(d**2 * (K-1) *t)])
         if np.random.rand() <= epsilon or is_collision:
             # explore
-            self.a[t] = np.random.randint(0, len(K))
+            self.a[t] = np.random.randint(0, K)
         else:
             # exploit
             self.a[t] = self.a[t-1]
